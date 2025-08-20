@@ -8,9 +8,25 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --fg-color: #00ff41;
+            --terminal-bg: rgba(0, 20, 0, 0.7);
+            --header-bg: #00ff41;
+            --header-fg: #0a0a0a;
+            --border-color: #00ff41;
+            --shadow-color: rgba(0, 255, 65, 0.3);
+            --link-color: #00c2ff;
+            --dir-color: #71a6ff;
+            --file-color: #ffffff;
+            --cmd-color: #888;
+            --error-color: #ff4d4d;
+            --warn-color: #f3d964;
+        }
+
         body {
-            background-color: #0a0a0a;
-            color: #00ff41;
+            background-color: var(--bg-color);
+            color: var(--fg-color);
             font-family: 'Fira Code', monospace;
             overflow: hidden;
             margin: 0;
@@ -33,24 +49,24 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: radial-gradient(ellipse at center, rgba(10, 10, 10, 0.6) 0%, rgba(10, 10, 10, 0.9) 70%, #0a0a0a 100%);
+            background: radial-gradient(ellipse at center, rgba(10, 10, 10, 0.6) 0%, rgba(10, 10, 10, 0.9) 70%, var(--bg-color) 100%);
         }
         .terminal {
             width: 90%;
             max-width: 800px;
             height: 80%;
             max-height: 600px;
-            border: 1px solid #00ff41;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            background-color: rgba(0, 20, 0, 0.7);
+            background-color: var(--terminal-bg);
             backdrop-filter: blur(5px);
-            box-shadow: 0 0 25px rgba(0, 255, 65, 0.3);
+            box-shadow: 0 0 25px var(--shadow-color);
             display: flex;
             flex-direction: column;
         }
         .terminal-header {
-            background-color: #00ff41;
-            color: #0a0a0a;
+            background-color: var(--header-bg);
+            color: var(--header-fg);
             padding: 4px 10px;
             font-weight: bold;
             border-top-left-radius: 6px;
@@ -66,55 +82,30 @@
             font-size: 14px;
             line-height: 1.5;
         }
-        .terminal-body::-webkit-scrollbar {
-            width: 8px;
-        }
-        .terminal-body::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .terminal-body::-webkit-scrollbar-thumb {
-            background-color: #00ff41;
-            border-radius: 4px;
-        }
-        .prompt {
-            display: flex;
-            align-items: center;
-        }
-        .prompt-label {
-            color: #00ff41;
-            font-weight: bold;
-        }
+        .terminal-body::-webkit-scrollbar { width: 8px; }
+        .terminal-body::-webkit-scrollbar-track { background: transparent; }
+        .terminal-body::-webkit-scrollbar-thumb { background-color: var(--fg-color); border-radius: 4px; }
+        
+        .prompt { display: flex; align-items: center; }
+        .prompt-label { color: var(--fg-color); font-weight: bold; white-space: nowrap; }
         .prompt-input {
             background: transparent;
             border: none;
-            color: #00ff41;
+            color: var(--fg-color);
             font-family: 'Fira Code', monospace;
             font-size: 14px;
             flex-grow: 1;
             outline: none;
             padding-left: 10px;
+            caret-color: var(--fg-color);
+            caret-shape: block;
         }
-        .cursor {
-            display: inline-block;
-            width: 8px;
-            height: 16px;
-            background-color: #00ff41;
-            animation: blink 1s step-end infinite;
-        }
-        @keyframes blink {
-            from, to { background-color: transparent; }
-            50% { background-color: #00ff41; }
-        }
-        a {
-            color: #00c2ff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .output-command {
-            color: #888;
-        }
+        a { color: var(--link-color); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .output-command { color: var(--cmd-color); }
+        .dir { color: var(--dir-color); font-weight: bold; }
+        .file { color: var(--file-color); }
+        .terminal-image { max-width: 200px; border-radius: 4px; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -130,9 +121,8 @@
             <div class="terminal-body" id="terminal-body">
                 <div id="output"></div>
                 <div class="prompt">
-                    <span class="prompt-label">visitor@divyesh.dev:~$</span>
+                    <span id="prompt-label" class="prompt-label"></span>
                     <input type="text" id="command-input" class="prompt-input" autofocus>
-                    <span class="cursor"></span>
                 </div>
             </div>
         </div>
@@ -140,53 +130,34 @@
 
     <script>
         // --- THREE.JS SCENE SETUP ---
-        let scene, camera, renderer, stars, cube;
+        let scene, camera, renderer, stars, artifact;
 
         function init3D() {
-            // Scene
             scene = new THREE.Scene();
-
-            // Camera
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.z = 1;
-            camera.rotation.x = Math.PI / 2;
-
-            // Renderer
+            camera.position.z = 1.5;
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.getElementById('scene-container').appendChild(renderer.domElement);
-
-            // Stars
             const starGeometry = new THREE.BufferGeometry();
             const starVertices = [];
-            for (let i = 0; i < 6000; i++) {
+            for (let i = 0; i < 10000; i++) {
                 const x = (Math.random() - 0.5) * 2000;
                 const y = (Math.random() - 0.5) * 2000;
                 const z = (Math.random() - 0.5) * 2000;
                 starVertices.push(x, y, z);
             }
             starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-            const starMaterial = new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.7 });
-            stars = new THREE.Points(starGeometry, starMaterial);
+            stars = new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.7 }));
             scene.add(stars);
-
-            // Central Cube
-            const cubeGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-            const cubeMaterial = new THREE.MeshNormalMaterial({ wireframe: true });
-            cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-            scene.add(cube);
-
-            // Animation Loop
+            artifact = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3, 0), new THREE.MeshNormalMaterial({ wireframe: true }));
+            scene.add(artifact);
             animate();
         }
 
         function animate() {
-            stars.position.z += 0.2;
-            if (stars.position.z > 1000) stars.position.z = -1000;
-
-            cube.rotation.x += 0.001;
-            cube.rotation.y += 0.001;
-
+            artifact.rotation.x += 0.001;
+            artifact.rotation.y += 0.002;
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
@@ -197,11 +168,9 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
         
-        // Mouse interaction for parallax effect
         function onMouseMove(event) {
             const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
             const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-            
             camera.position.x += (mouseX - camera.position.x) * 0.02;
             camera.position.y += (mouseY - camera.position.y) * 0.02;
             camera.lookAt(scene.position);
@@ -216,97 +185,210 @@
         const commandInput = document.getElementById('command-input');
         const outputDiv = document.getElementById('output');
         const terminalBody = document.getElementById('terminal-body');
+        const promptLabel = document.getElementById('prompt-label');
+        
         let commandHistory = [];
         let historyIndex = -1;
+        let currentPath = '/home/visitor';
+
+        const fileSystem = {
+            '/': { type: 'dir', content: ['home'] },
+            '/home': { type: 'dir', content: ['visitor'] },
+            '/home/visitor': { type: 'dir', content: ['about.txt', 'skills', 'projects', 'contact.txt', 'profile.png'] },
+            '/home/visitor/skills': { type: 'dir', content: ['languages.txt', 'frameworks.txt', 'tools.txt'] },
+            '/home/visitor/projects': { type: 'dir', content: ['goparty.md', 'augur.md'] },
+            '/home/visitor/about.txt': { type: 'file', content: `Divyesh Vishwakarma\nEnthusiastic Full Stack Web Developer, App Developer, and Python Programmer. Currently a student at Mumbai University with a passion for building innovative solutions and a love for microprocessors (especially Arduino!).` },
+            '/home/visitor/contact.txt': { type: 'file', content: `[Email]\n  -> mailto:divyesh1099@gmail.com\n\n[LinkedIn]\n  -> https://www.linkedin.com/in/divyesh-vishwakarma-621197175/\n\n[GitHub]\n  -> https://github.com/divyesh1099\n\nOr run the 'socials' command for a full list.` },
+            '/home/visitor/profile.png': { type: 'file', content: `https://avatars.githubusercontent.com/u/59281833?v=4` },
+            '/home/visitor/skills/languages.txt': { type: 'file', content: `Python, JavaScript, Java, C, HTML5, CSS3`},
+            '/home/visitor/skills/frameworks.txt': { type: 'file', content: `Django, Flask, React, Node.js, Express, Flutter, Bootstrap, Tailwind CSS`},
+            '/home/visitor/skills/tools.txt': { type: 'file', content: `Git, Docker, AWS, Heroku, Postman, Figma, Blender, MongoDB, MySQL, Firebase`},
+            '/home/visitor/projects/goparty.md': { type: 'file', content: `# GoParty\nAn open-source event management application.\nLink: https://github.com/divyesh1099/goparty`},
+            '/home/visitor/projects/augur.md': { type: 'file', content: `# Augur\nCollaborating on the open-source CHAOSS project for software health analytics.\nLink: https://github.com/chaoss/augur`},
+        };
+
+        const themes = {
+            matrix: { '--bg-color': '#000000', '--fg-color': '#00ff41', '--terminal-bg': 'rgba(0, 20, 0, 0.7)', '--header-bg': '#00ff41', '--header-fg': '#000000', '--border-color': '#00ff41', '--shadow-color': 'rgba(0, 255, 65, 0.3)', '--link-color': '#00c2ff', '--dir-color': '#71a6ff', '--file-color': '#ffffff', '--cmd-color': '#888', '--error-color': '#ff4d4d', '--warn-color': '#f3d964' },
+            dracula: { '--bg-color': '#282a36', '--fg-color': '#f8f8f2', '--terminal-bg': 'rgba(40, 42, 54, 0.8)', '--header-bg': '#bd93f9', '--header-fg': '#282a36', '--border-color': '#6272a4', '--shadow-color': 'rgba(189, 147, 249, 0.2)', '--link-color': '#8be9fd', '--dir-color': '#50fa7b', '--file-color': '#f8f8f2', '--cmd-color': '#6272a4', '--error-color': '#ff5555', '--warn-color': '#f1fa8c' },
+            solarized: { '--bg-color': '#002b36', '--fg-color': '#839496', '--terminal-bg': 'rgba(0, 43, 54, 0.8)', '--header-bg': '#268bd2', '--header-fg': '#002b36', '--border-color': '#586e75', '--shadow-color': 'rgba(38, 139, 210, 0.2)', '--link-color': '#2aa198', '--dir-color': '#b58900', '--file-color': '#eee8d5', '--cmd-color': '#586e75', '--error-color': '#dc322f', '--warn-color': '#cb4b16' }
+        };
 
         const commands = {
-            'help': `Available commands:
-<br>  <span class="text-green-400">whoami</span>     - Displays a short bio.
-<br>  <span class="text-green-400">skills</span>     - Lists technical skills.
-<br>  <span class="text-green-400">projects</span>   - Shows key projects.
-<br>  <span class="text-green-400">contact</span>    - Provides contact information.
-<br>  <span class="text-green-400">history</span>    - Shows command history.
-<br>  <span class="text-green-400">clear</span>      - Clears the terminal screen.`,
-            'whoami': `
-<span class="text-cyan-400">Divyesh Vishwakarma</span>
-<br>Enthusiastic Full Stack Web Developer, App Developer, and Python Programmer. Currently a student at Mumbai University with a passion for building innovative solutions and a love for microprocessors (especially Arduino!).
-`,
-            'skills': `
-<span class="text-yellow-400">[Languages]</span>
-  - Python, JavaScript, Java, C, HTML5, CSS3
-<br>
-<span class="text-yellow-400">[Frameworks & Libraries]</span>
-  - Django, Flask, React, Node.js, Express, Flutter, Bootstrap, Tailwind CSS
-<br>
-<span class="text-yellow-400">[Databases]</span>
-  - MongoDB, MySQL, Firebase
-<br>
-<span class="text-yellow-400">[Tools & Platforms]</span>
-  - Git, Docker, AWS, Heroku, Postman, Figma, Blender
-`,
-            'projects': `
-<span class="text-purple-400">[GoParty]</span> - An open-source event management application.
-  <a href="https://github.com/divyesh1099/goparty" target="_blank">-> View on GitHub</a>
-<br>
-<span class="text-purple-400">[Augur Contribution]</span> - Collaborating on the open-source CHAOSS project.
-  <a href="https://github.com/chaoss/augur" target="_blank">-> View on GitHub</a>
-<br>
-<span class="text-purple-400">[Portfolio v1]</span> - My previous personal portfolio website.
-  <a href="https://github.com/divyesh1099" target="_blank">-> View on GitHub</a>
-`,
-            'contact': `
-<span class="text-red-400">[Email]</span>
-  <a href="mailto:divyesh1099@gmail.com">divyesh1099@gmail.com</a>
-<br>
-<span class="text-red-400">[LinkedIn]</span>
-  <a href="https://www.linkedin.com/in/divyesh-vishwakarma-621197175/" target="_blank">divyesh-vishwakarma</a>
-<br>
-<span class="text-red-400">[GitHub]</span>
-  <a href="https://github.com/divyesh1099" target="_blank">divyesh1099</a>
-<br>
-<span class="text-red-400">[Twitter]</span>
-  <a href="https://twitter.com/divyesh62121377" target="_blank">@divyesh62121377</a>
-`,
-            'history': () => commandHistory.join('<br>'),
-            'clear': () => {
-                outputDiv.innerHTML = '';
-                return '';
+            help: () => `Available commands:
+<br>  <span style="color:var(--dir-color)">Core:</span> whoami, date, history, clear, echo, sudo, banner
+<br>  <span style="color:var(--dir-color)">FS:</span> ls, cd, cat, pwd, fetch [file]
+<br>  <span style="color:var(--dir-color)">Info:</span> neofetch, socials, repos, weather
+<br>  <span style="color:var(--dir-color)">Fun:</span> cowsay [message], theme [name]`,
+            whoami: () => 'visitor',
+            banner: () => `<pre>
+██████╗ ██╗██╗   ██╗██╗   ██╗███████╗██╗  ██╗
+██╔══██╗██║╚██╗ ██╔╝╚██╗ ██╔╝██╔════╝██║  ██║
+██║  ██║██║ ╚████╔╝  ╚████╔╝ █████╗  ███████║
+██║  ██║██║  ╚██╔╝    ╚██╔╝  ██╔══╝  ██╔══██║
+██████╔╝██║   ██║      ██║   ███████╗██║  ██║
+╚═════╝ ╚═╝   ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝
+</pre>`,
+            weather: async () => {
+                const response = await fetch('https://wttr.in/Navi%20Mumbai?format=3');
+                return response.ok ? await response.text() : "Weather service unavailable.";
+            },
+            repos: async () => {
+                const response = await fetch('https://api.github.com/users/divyesh1099/repos?sort=pushed&per_page=10');
+                if (!response.ok) return "Could not fetch GitHub repos.";
+                const repos = await response.json();
+                return repos.map(repo => 
+                    `&bull; <a href="${repo.html_url}" target="_blank">${repo.name}</a> [${repo.stargazers_count}★] - <span style="color:var(--cmd-color)">${repo.description || 'No description'}</span>`
+                ).join('<br>');
+            },
+            date: () => new Date().toLocaleString(),
+            pwd: () => currentPath,
+            history: () => [...commandHistory].reverse().join('<br>'),
+            clear: () => { outputDiv.innerHTML = ''; return ''; },
+            echo: (args) => args.join(' '),
+            sudo: () => `User 'visitor' is not in the sudoers file. This incident will be reported.`,
+            socials: () => `
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
+<span>[Website] <a href="https://divyeshvishwakarma.com/" target="_blank">divyeshvishwakarma.com</a></span>
+<span>[Profile] <a href="https://motidivya-6cc24.web.app/" target="_blank">motidivya-6cc24.web.app</a></span>
+<span>[LinkedIn] <a href="https://www.linkedin.com/in/divyesh-vishwakarma-621197175/" target="_blank">divyesh-vishwakarma</a></span>
+<span>[LinkedIn 2] <a href="https://www.linkedin.com/in/motidivya/" target="_blank">motidivya</a></span>
+<span>[GitHub] <a href="https://github.com/divyesh1099" target="_blank">divyesh1099</a></span>
+<span>[LeetCode] <a href="https://leetcode.com/motidivya/" target="_blank">motidivya</a></span>
+<span>[Twitter] <a href="https://twitter.com/divyesh1099" target="_blank">divyesh1099</a></span>
+<span>[Instagram] <a href="https://www.instagram.com/divyesh_unofficial_1099/" target="_blank">divyesh_unofficial_1099</a></span>
+<span>[Facebook] <a href="https://www.facebook.com/divyesh.vishwkarma/" target="_blank">divyesh.vishwkarma</a></span>
+<span>[YouTube] <a href="https://www.youtube.com/channel/UC-EYI_rkPKzGecWSVe-h2LA" target="_blank">Tech Channel</a></span>
+<span>[Figma] <a href="https://www.figma.com/@motidivya" target="_blank">@motidivya</a></span>
+<span>[Medium] <a href="https://medium.com/@divyesh1099" target="_blank">@divyesh1099</a></span>
+<span>[CodePen] <a href="https://codepen.io/divyesh1099" target="_blank">divyesh1099</a></span>
+<span>[CreativeMarket] <a href="https://creativemarket.com/users/DivyeshVishwakarma" target="_blank">DivyeshVishwakarma</a></span>
+<span>[Behance] <a href="https://www.behance.net/sonuvishwakarma13" target="_blank">sonuvishwakarma13</a></span>
+<span>[Vimeo] <a href="https://vimeo.com/user192331951" target="_blank">user192331951</a></span>
+<span>[Dribbble] <a href="https://dribbble.com/motidivya" target="_blank">motidivya</a></span>
+<span>[Dev.to] <a href="https://dev.to/divyesh1099" target="_blank">divyesh1099</a></span>
+<span>[CodeSandbox] <a href="https://codesandbox.io/u/divyesh1099" target="_blank">divyesh1099</a></span>
+<span>[StackOverflow] <a href="https://stackoverflow.com/users/13616221/divyesh" target="_blank">divyesh</a></span>
+<span>[Reddit] <a href="https://www.reddit.com/user/divyesh1099" target="_blank">u/divyesh1099</a></span>
+<span>[BioDrop] <a href="https://www.biodrop.io/divyesh1099" target="_blank">divyesh1099</a></span>
+</div>`,
+            cowsay: (args) => {
+                const message = args.join(' ') || "Moo!";
+                return `<pre> &lt; ${message} &gt;\n  ${'-'.repeat(message.length + 2)}\n         \\   ^__^\n          \\  (oo)\\_______\n             (__)\\       )\\/\\\n                 ||----w |\n                 ||     ||</pre>`;
+            },
+            theme: (args) => {
+                const themeName = args[0];
+                if (!themeName) return `Usage: theme [name]<br>Available themes: ${Object.keys(themes).join(', ')}`;
+                if (themes[themeName]) {
+                    Object.entries(themes[themeName]).forEach(([key, value]) => document.documentElement.style.setProperty(key, value));
+                    return `Theme set to '${themeName}'.`;
+                }
+                return `Theme '${themeName}' not found.`;
+            },
+            ls: (args) => {
+                const path = resolvePath(args[0] || '.');
+                const node = getNode(path);
+                if (node?.type === 'dir') {
+                    return node.content.map(item => {
+                        const itemPath = path === '/' ? `/${item}` : `${path}/${item}`;
+                        return getNode(itemPath)?.type === 'dir' ? `<span class="dir">${item}/</span>` : `<span class="file">${item}</span>`;
+                    }).join('  ');
+                }
+                return `ls: cannot access '${args[0] || '.'}': No such file or directory`;
+            },
+            cd: (args) => {
+                const target = args[0] || '/home/visitor';
+                const newPath = resolvePath(target);
+                const node = getNode(newPath);
+                if (node?.type === 'dir') {
+                    currentPath = newPath;
+                    updatePrompt();
+                    return '';
+                }
+                return `cd: no such file or directory: ${target}`;
+            },
+            cat: (args) => {
+                if (!args[0]) return 'Usage: cat [file]';
+                const path = resolvePath(args[0]);
+                const node = getNode(path);
+                if (node?.type === 'file') {
+                    const content = node.content;
+                    if (content.startsWith('https://') && /\.(jpe?g|png|gif)$/i.test(content)) {
+                        return `<img src="${content}" class="terminal-image" alt="${path.split('/').pop()}">`;
+                    }
+                    return content.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;');
+                }
+                if (node?.type === 'dir') return `cat: ${args[0]}: Is a directory`;
+                return `cat: ${args[0]}: No such file or directory`;
+            },
+            fetch: (args) => {
+                if (!args[0]) return 'Usage: fetch [file]';
+                const path = resolvePath(args[0]);
+                const node = getNode(path);
+                if (!node || node.type !== 'file') return `fetch: ${args[0]}: No such file`;
+                
+                const progressContainer = document.createElement('div');
+                progressContainer.innerHTML = `Downloading ${args[0]}...<br>[<span id="progress-bar"></span><span id="progress-empty"></span>] <span id="progress-percent">0</span>%`;
+                outputDiv.appendChild(progressContainer);
+                
+                let percent = 0;
+                const interval = setInterval(() => {
+                    percent++;
+                    const bar = '█'.repeat(percent / 5);
+                    const empty = ' '.repeat(20 - percent / 5);
+                    document.getElementById('progress-bar').innerText = bar;
+                    document.getElementById('progress-empty').innerText = empty;
+                    document.getElementById('progress-percent').innerText = percent;
+                    if (percent >= 100) {
+                        clearInterval(interval);
+                        progressContainer.innerHTML += '<br>Download complete.';
+                        terminalBody.scrollTop = terminalBody.scrollHeight;
+                    }
+                }, 20);
+                return ''; // Return empty because we are manually creating the output
             }
         };
 
-        const typeEffect = (element, text, delay = 20) => {
-            return new Promise(resolve => {
-                let i = 0;
-                function type() {
-                    if (i < text.length) {
-                        element.innerHTML += text.charAt(i);
-                        i++;
-                        terminalBody.scrollTop = terminalBody.scrollHeight;
-                        setTimeout(type, delay);
-                    } else {
-                        resolve();
-                    }
+        const getNode = (path) => fileSystem[path];
+        const resolvePath = (path) => {
+            let parts = (path.startsWith('/') ? [] : currentPath.split('/')).filter(Boolean);
+            path.split('/').forEach(part => {
+                if (part === '..') {
+                    if (parts.length > 0) parts.pop();
+                } else if (part && part !== '.') {
+                    parts.push(part);
                 }
-                type();
             });
+            return '/' + parts.join('/');
         };
 
-        const executeCommand = async (cmd) => {
-            // Add the executed command to the output
+        const updatePrompt = () => {
+            const shortPath = currentPath.replace('/home/visitor', '~');
+            promptLabel.textContent = `visitor@divyesh.dev:${shortPath}$`;
+        };
+        
+        const executeCommand = async (fullCommand) => {
+            const [cmd, ...args] = fullCommand.split(' ').filter(Boolean);
             const prevCommandDiv = document.createElement('div');
-            prevCommandDiv.innerHTML = `<span class="prompt-label">visitor@divyesh.dev:~$</span> <span class="output-command">${cmd}</span>`;
+            prevCommandDiv.innerHTML = `<span class="prompt-label">${promptLabel.textContent}</span> <span class="output-command">${fullCommand}</span>`;
             outputDiv.appendChild(prevCommandDiv);
 
-            // Get the response
-            let response = `<span class="text-red-500">Command not found: ${cmd}. Type 'help' for a list of commands.</span>`;
-            if (cmd in commands) {
-                const result = commands[cmd];
-                response = typeof result === 'function' ? result() : result;
-            } else if (cmd.trim() === '') {
-                response = '';
+            let response;
+            if (cmd) {
+                const commandFunc = commands[cmd];
+                if (commandFunc) {
+                    const loadingDiv = document.createElement('div');
+                    if (['repos', 'weather'].includes(cmd)) {
+                        loadingDiv.innerHTML = `Fetching data...`;
+                        outputDiv.appendChild(loadingDiv);
+                        terminalBody.scrollTop = terminalBody.scrollHeight;
+                    }
+                    response = await commandFunc(args);
+                    if (loadingDiv.parentNode) loadingDiv.remove();
+                } else {
+                    response = `<span style="color:var(--error-color)">Command not found: ${cmd}. Type 'help'.</span>`;
+                }
             }
 
-            // Add the response to the output
             if (response) {
                 const responseDiv = document.createElement('div');
                 responseDiv.innerHTML = response;
@@ -319,9 +401,34 @@
             commandInput.focus();
         };
 
+        const handleAutocomplete = () => {
+            const value = commandInput.value;
+            const parts = value.split(' ');
+            const currentPart = parts[parts.length - 1];
+            let matches = [];
+            if (parts.length === 1) {
+                matches = Object.keys(commands).filter(c => c.startsWith(currentPart));
+            } else {
+                const command = parts[0];
+                if (['ls', 'cd', 'cat', 'fetch'].includes(command)) {
+                    const dirNode = getNode(currentPath);
+                    matches = dirNode.content.filter(item => item.startsWith(currentPart));
+                }
+            }
+            if (matches.length === 1) {
+                parts[parts.length - 1] = matches[0];
+                commandInput.value = parts.join(' ') + (getNode(resolvePath(matches[0]))?.type === 'dir' ? '/' : ' ');
+            } else if (matches.length > 1) {
+                executeCommand(commandInput.value); // Show current line
+                const sharedDiv = document.createElement('div');
+                sharedDiv.innerHTML = matches.join('&nbsp;&nbsp;');
+                outputDiv.appendChild(sharedDiv);
+            }
+        }
+
         commandInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                const command = commandInput.value.trim().toLowerCase();
+                const command = commandInput.value.trim();
                 if (command !== '') {
                     commandHistory.unshift(command);
                     historyIndex = -1;
@@ -330,43 +437,32 @@
                 executeCommand(command);
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                if (historyIndex < commandHistory.length - 1) {
-                    historyIndex++;
-                    commandInput.value = commandHistory[historyIndex];
-                }
+                if (historyIndex < commandHistory.length - 1) historyIndex++;
+                commandInput.value = commandHistory[historyIndex] || '';
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                if (historyIndex > 0) {
-                    historyIndex--;
-                    commandInput.value = commandHistory[historyIndex];
-                } else {
-                    historyIndex = -1;
-                    commandInput.value = '';
-                }
+                if (historyIndex > 0) historyIndex--;
+                else historyIndex = -1;
+                commandInput.value = commandHistory[historyIndex] || '';
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                handleAutocomplete();
             }
         });
 
-        // Focus input on click anywhere in the terminal
-        terminalBody.addEventListener('click', () => {
-            commandInput.focus();
-        });
+        terminalBody.addEventListener('click', () => commandInput.focus());
 
-        // Initial welcome message
-        const welcomeMessage = `
-Booting DivyeshOS v2.0...
-<br>Connection established. Welcome, visitor.
-<br>Type <span class="text-yellow-300">'help'</span> to see a list of available commands.
-<br>
-`;
-        
         window.onload = () => {
-            commandInput.disabled = true;
-            const welcomeDiv = document.createElement('div');
-            outputDiv.appendChild(welcomeDiv);
-            typeEffect(welcomeDiv, welcomeMessage, 30).then(() => {
-                commandInput.disabled = false;
-                commandInput.focus();
-            });
+            updatePrompt();
+            const checks = ['Quantum core', 'Neural network', 'Reality shaders', 'Personal matrix', 'System integrity'];
+            const randomCheck = checks[Math.floor(Math.random() * checks.length)];
+            outputDiv.innerHTML = `Booting DivyeshOS v4.0...
+<br>Calibrating ${randomCheck}... <span style="color:var(--fg-color)">[OK]</span>
+<br>Connection established. Welcome, visitor.
+<br>Type <span style="color:var(--warn-color)">'help'</span> to see a list of commands.
+<br>Start by typing <span style="color:var(--warn-color)">'ls'</span> to explore.
+<br>`;
+            commandInput.focus();
         };
 
     </script>
