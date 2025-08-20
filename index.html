@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divyesh Vishwakarma | Interactive Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #00ff41;
+            font-family: 'Fira Code', monospace;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        #scene-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .terminal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at center, rgba(10, 10, 10, 0.6) 0%, rgba(10, 10, 10, 0.9) 70%, #0a0a0a 100%);
+        }
+        .terminal {
+            width: 90%;
+            max-width: 800px;
+            height: 80%;
+            max-height: 600px;
+            border: 1px solid #00ff41;
+            border-radius: 8px;
+            background-color: rgba(0, 20, 0, 0.7);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 25px rgba(0, 255, 65, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        .terminal-header {
+            background-color: #00ff41;
+            color: #0a0a0a;
+            padding: 4px 10px;
+            font-weight: bold;
+            border-top-left-radius: 6px;
+            border-top-right-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .terminal-body {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .terminal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        .terminal-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .terminal-body::-webkit-scrollbar-thumb {
+            background-color: #00ff41;
+            border-radius: 4px;
+        }
+        .prompt {
+            display: flex;
+            align-items: center;
+        }
+        .prompt-label {
+            color: #00ff41;
+            font-weight: bold;
+        }
+        .prompt-input {
+            background: transparent;
+            border: none;
+            color: #00ff41;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            flex-grow: 1;
+            outline: none;
+            padding-left: 10px;
+        }
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background-color: #00ff41;
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            from, to { background-color: transparent; }
+            50% { background-color: #00ff41; }
+        }
+        a {
+            color: #00c2ff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .output-command {
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="scene-container"></div>
+
+    <div class="terminal-overlay">
+        <div class="terminal">
+            <div class="terminal-header">
+                <span>DIVYESH_VISHWAKARMA:/PROFILE</span>
+                <span>bash</span>
+            </div>
+            <div class="terminal-body" id="terminal-body">
+                <div id="output"></div>
+                <div class="prompt">
+                    <span class="prompt-label">visitor@divyesh.dev:~$</span>
+                    <input type="text" id="command-input" class="prompt-input" autofocus>
+                    <span class="cursor"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- THREE.JS SCENE SETUP ---
+        let scene, camera, renderer, stars, cube;
+
+        function init3D() {
+            // Scene
+            scene = new THREE.Scene();
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.z = 1;
+            camera.rotation.x = Math.PI / 2;
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('scene-container').appendChild(renderer.domElement);
+
+            // Stars
+            const starGeometry = new THREE.BufferGeometry();
+            const starVertices = [];
+            for (let i = 0; i < 6000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starVertices.push(x, y, z);
+            }
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const starMaterial = new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.7 });
+            stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
+
+            // Central Cube
+            const cubeGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            const cubeMaterial = new THREE.MeshNormalMaterial({ wireframe: true });
+            cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            scene.add(cube);
+
+            // Animation Loop
+            animate();
+        }
+
+        function animate() {
+            stars.position.z += 0.2;
+            if (stars.position.z > 1000) stars.position.z = -1000;
+
+            cube.rotation.x += 0.001;
+            cube.rotation.y += 0.001;
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Mouse interaction for parallax effect
+        function onMouseMove(event) {
+            const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            camera.position.x += (mouseX - camera.position.x) * 0.02;
+            camera.position.y += (mouseY - camera.position.y) * 0.02;
+            camera.lookAt(scene.position);
+        }
+
+        window.addEventListener('resize', onWindowResize, false);
+        document.addEventListener('mousemove', onMouseMove, false);
+
+        init3D();
+
+        // --- TERMINAL LOGIC ---
+        const commandInput = document.getElementById('command-input');
+        const outputDiv = document.getElementById('output');
+        const terminalBody = document.getElementById('terminal-body');
+        let commandHistory = [];
+        let historyIndex = -1;
+
+        const commands = {
+            'help': `Available commands:
+<br>  <span class="text-green-400">whoami</span>     - Displays a short bio.
+<br>  <span class="text-green-400">skills</span>     - Lists technical skills.
+<br>  <span class="text-green-400">projects</span>   - Shows key projects.
+<br>  <span class="text-green-400">contact</span>    - Provides contact information.
+<br>  <span class="text-green-400">history</span>    - Shows command history.
+<br>  <span class="text-green-400">clear</span>      - Clears the terminal screen.`,
+            'whoami': `
+<span class="text-cyan-400">Divyesh Vishwakarma</span>
+<br>Enthusiastic Full Stack Web Developer, App Developer, and Python Programmer. Currently a student at Mumbai University with a passion for building innovative solutions and a love for microprocessors (especially Arduino!).
+`,
+            'skills': `
+<span class="text-yellow-400">[Languages]</span>
+  - Python, JavaScript, Java, C, HTML5, CSS3
+<br>
+<span class="text-yellow-400">[Frameworks & Libraries]</span>
+  - Django, Flask, React, Node.js, Express, Flutter, Bootstrap, Tailwind CSS
+<br>
+<span class="text-yellow-400">[Databases]</span>
+  - MongoDB, MySQL, Firebase
+<br>
+<span class="text-yellow-400">[Tools & Platforms]</span>
+  - Git, Docker, AWS, Heroku, Postman, Figma, Blender
+`,
+            'projects': `
+<span class="text-purple-400">[GoParty]</span> - An open-source event management application.
+  <a href="https://github.com/divyesh1099/goparty" target="_blank">-> View on GitHub</a>
+<br>
+<span class="text-purple-400">[Augur Contribution]</span> - Collaborating on the open-source CHAOSS project.
+  <a href="https://github.com/chaoss/augur" target="_blank">-> View on GitHub</a>
+<br>
+<span class="text-purple-400">[Portfolio v1]</span> - My previous personal portfolio website.
+  <a href="https://github.com/divyesh1099" target="_blank">-> View on GitHub</a>
+`,
+            'contact': `
+<span class="text-red-400">[Email]</span>
+  <a href="mailto:divyesh1099@gmail.com">divyesh1099@gmail.com</a>
+<br>
+<span class="text-red-400">[LinkedIn]</span>
+  <a href="https://www.linkedin.com/in/divyesh-vishwakarma-621197175/" target="_blank">divyesh-vishwakarma</a>
+<br>
+<span class="text-red-400">[GitHub]</span>
+  <a href="https://github.com/divyesh1099" target="_blank">divyesh1099</a>
+<br>
+<span class="text-red-400">[Twitter]</span>
+  <a href="https://twitter.com/divyesh62121377" target="_blank">@divyesh62121377</a>
+`,
+            'history': () => commandHistory.join('<br>'),
+            'clear': () => {
+                outputDiv.innerHTML = '';
+                return '';
+            }
+        };
+
+        const typeEffect = (element, text, delay = 20) => {
+            return new Promise(resolve => {
+                let i = 0;
+                function type() {
+                    if (i < text.length) {
+                        element.innerHTML += text.charAt(i);
+                        i++;
+                        terminalBody.scrollTop = terminalBody.scrollHeight;
+                        setTimeout(type, delay);
+                    } else {
+                        resolve();
+                    }
+                }
+                type();
+            });
+        };
+
+        const executeCommand = async (cmd) => {
+            // Add the executed command to the output
+            const prevCommandDiv = document.createElement('div');
+            prevCommandDiv.innerHTML = `<span class="prompt-label">visitor@divyesh.dev:~$</span> <span class="output-command">${cmd}</span>`;
+            outputDiv.appendChild(prevCommandDiv);
+
+            // Get the response
+            let response = `<span class="text-red-500">Command not found: ${cmd}. Type 'help' for a list of commands.</span>`;
+            if (cmd in commands) {
+                const result = commands[cmd];
+                response = typeof result === 'function' ? result() : result;
+            } else if (cmd.trim() === '') {
+                response = '';
+            }
+
+            // Add the response to the output
+            if (response) {
+                const responseDiv = document.createElement('div');
+                responseDiv.innerHTML = response;
+                outputDiv.appendChild(responseDiv);
+            }
+            
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+            commandInput.value = '';
+            commandInput.disabled = false;
+            commandInput.focus();
+        };
+
+        commandInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const command = commandInput.value.trim().toLowerCase();
+                if (command !== '') {
+                    commandHistory.unshift(command);
+                    historyIndex = -1;
+                }
+                commandInput.disabled = true;
+                executeCommand(command);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    commandInput.value = commandHistory[historyIndex];
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    commandInput.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = -1;
+                    commandInput.value = '';
+                }
+            }
+        });
+
+        // Focus input on click anywhere in the terminal
+        terminalBody.addEventListener('click', () => {
+            commandInput.focus();
+        });
+
+        // Initial welcome message
+        const welcomeMessage = `
+Booting DivyeshOS v2.0...
+<br>Connection established. Welcome, visitor.
+<br>Type <span class="text-yellow-300">'help'</span> to see a list of available commands.
+<br>
+`;
+        
+        window.onload = () => {
+            commandInput.disabled = true;
+            const welcomeDiv = document.createElement('div');
+            outputDiv.appendChild(welcomeDiv);
+            typeEffect(welcomeDiv, welcomeMessage, 30).then(() => {
+                commandInput.disabled = false;
+                commandInput.focus();
+            });
+        };
+
+    </script>
+</body>
+</html>
