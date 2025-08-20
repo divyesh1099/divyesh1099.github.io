@@ -221,12 +221,12 @@
 <br>  <span style="color:var(--dir-color)">Fun:</span> cowsay [message], theme [name]`,
             whoami: () => 'visitor',
             banner: () => `<pre>
-██████╗ ██╗██╗   ██╗██╗   ██╗███████╗██╗  ██╗
-██╔══██╗██║╚██╗ ██╔╝╚██╗ ██╔╝██╔════╝██║  ██║
-██║  ██║██║ ╚████╔╝  ╚████╔╝ █████╗  ███████║
-██║  ██║██║  ╚██╔╝    ╚██╔╝  ██╔══╝  ██╔══██║
-██████╔╝██║   ██║      ██║   ███████╗██║  ██║
-╚═════╝ ╚═╝   ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝
+██████╗ ██╗██╗   ██╗██╗   ██╗███████╗███████╗██╗  ██╗
+██╔══██╗██║╚██╗ ██╔╝╚██╗ ██╔╝██╔════╝██╔════╝██║  ██║
+██║  ██║██║ ╚████╔╝  ╚████╔╝ █████╗  ███████╗███████║
+██║  ██║██║  ╚██╔╝    ╚██╔╝  ██╔══╝  ╚════██║██╔══██║
+██████╔╝██║   ██║      ██║   ███████╗███████║██║  ██║
+╚═════╝ ╚═╝   ╚═╝      ╚═╝   ╚══════╝╚══════╝╚═╝  ╚═╝                                                                
 </pre>`,
             weather: async () => {
                 const response = await fetch('https://wttr.in/Navi%20Mumbai?format=3');
@@ -248,7 +248,7 @@
             sudo: () => `User 'visitor' is not in the sudoers file. This incident will be reported.`,
             socials: () => `
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
-<span>[Website] <a href="https://divyeshvishwakarma.com/" target="_blank">divyeshvishwakarma.com</a></span>
+<span>[Website] <a href="https://www.divyeshvishwakarma.com/" target="_blank">divyeshvishwakarma.com</a></span>
 <span>[Profile] <a href="https://motidivya-6cc24.web.app/" target="_blank">motidivya-6cc24.web.app</a></span>
 <span>[LinkedIn] <a href="https://www.linkedin.com/in/divyesh-vishwakarma-621197175/" target="_blank">divyesh-vishwakarma</a></span>
 <span>[LinkedIn 2] <a href="https://www.linkedin.com/in/motidivya/" target="_blank">motidivya</a></span>
@@ -351,7 +351,7 @@
         const getNode = (path) => fileSystem[path];
         const resolvePath = (path) => {
             let parts = (path.startsWith('/') ? [] : currentPath.split('/')).filter(Boolean);
-            path.split('/').forEach(part => {
+            (path || '').split('/').forEach(part => {
                 if (part === '..') {
                     if (parts.length > 0) parts.pop();
                 } else if (part && part !== '.') {
