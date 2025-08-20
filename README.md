@@ -51,7 +51,7 @@ Want to tinker with the code? It's easy to run on your local machine.
 
 1.  **Clone the repository:**
     ```sh
-    git clone [https://github.com/divyesh1099/divyesh1099.github.io.git](https://github.com/divyesh1099/divyesh1099.github.io.git)
+    git clone https://github.com/divyesh1099/divyesh1099.github.io.git
     ```
 2.  **Navigate into the directory:**
     ```sh
